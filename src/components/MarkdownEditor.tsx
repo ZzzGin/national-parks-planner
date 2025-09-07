@@ -102,6 +102,7 @@ IMPORTANT NOTES:
 2. The template or writing plan should use markdown level 2 title (##) to represent sections.
 3. For each section, use ai-write codeblocks to describe your plan so that it is easier for users.
 4. User might read your template and use AI to write section by section, so make sure you plan the order well for the sections. For example, if section B needs some information from section A, it should be placed after section A.
+5. For each section, if available, add emojis to make the document more lively.
 `;
     } else {
       systemInstruction = `You are a helpful writer helping user to write articles in Markdown format.
