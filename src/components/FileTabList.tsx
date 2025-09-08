@@ -12,6 +12,7 @@ interface FileTabListProps {
   onDeleteFile: (id: string) => void;
   onRenameFile: (id: string, newName: string) => void;
   onStartOver: () => void;
+  onToggleFile: (id: string) => void;
 }
 
 export default function FileTabList({
@@ -22,6 +23,7 @@ export default function FileTabList({
   onDeleteFile,
   onRenameFile,
   onStartOver,
+  onToggleFile,
 }: FileTabListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -88,7 +90,7 @@ export default function FileTabList({
                     if (e.key === 'Enter') handleFinishEdit();
                     if (e.key === 'Escape') handleCancelEdit();
                   }}
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm text-gray-900 bg-white focus:outline-none focus:border-blue-500"
                   autoFocus
                 />
                 <button
@@ -106,7 +108,17 @@ export default function FileTabList({
               </div>
             ) : (
               <>
-                <span className="flex-1 text-sm truncate">{file.name}</span>
+                <input
+                  type="checkbox"
+                  checked={file.isIncluded !== false}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleFile(file.id);
+                  }}
+                  className="mr-2 cursor-pointer"
+                  title="Include in AI context"
+                />
+                <span className="flex-1 text-sm text-gray-900 truncate">{file.name}</span>
                 <div className="hidden group-hover:flex items-center gap-1">
                   <button
                     onClick={(e) => {
@@ -115,7 +127,7 @@ export default function FileTabList({
                     }}
                     className="p-1 hover:bg-gray-200 rounded"
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={14} className="text-gray-600" />
                   </button>
                   <button
                     onClick={(e) => {

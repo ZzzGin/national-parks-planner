@@ -4,6 +4,7 @@ export interface MarkdownFile {
   content: string;
   createdAt: Date;
   updatedAt: Date;
+  isIncluded?: boolean;
 }
 
 export interface AITrigger {

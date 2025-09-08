@@ -26,6 +26,7 @@ export default function Home() {
         content: '# Welcome to National Parks Planner\n\nStart planning your trip by creating a new file or editing this one.\n\n## How to use\n\n1. Create or select a file from the left panel\n2. Edit the content in the middle editor\n3. Use AI features:\n   - Wrap text with \\`\\`\\`ai-template\\`\\`\\` to generate a template\n   - Wrap text with \\`\\`\\`ai-write\\`\\`\\` to enrich a section\n4. Preview your markdown on the right',
         createdAt: new Date(),
         updatedAt: new Date(),
+        isIncluded: true,
       };
       setFiles([defaultFile]);
       setActiveFileId(defaultFile.id);
@@ -48,6 +49,7 @@ export default function Home() {
       content: '# New Document\n\nStart writing here...',
       createdAt: new Date(),
       updatedAt: new Date(),
+      isIncluded: true,
     };
     setFiles(prevFiles => [...prevFiles, newFile]);
     setActiveFileId(newFileId);
@@ -69,6 +71,12 @@ export default function Home() {
     ));
   }, []);
 
+  const handleToggleFile = useCallback((id: string) => {
+    setFiles(prevFiles => prevFiles.map(f => 
+      f.id === id ? { ...f, isIncluded: f.isIncluded === false ? true : false } : f
+    ));
+  }, []);
+
   const handleContentChange = useCallback((content: string) => {
     if (activeFileId) {
       setFiles(prevFiles => prevFiles.map(f => 
@@ -78,7 +86,10 @@ export default function Home() {
   }, [activeFileId]);
 
   const getAllContext = useCallback(() => {
-    return files.map(f => `## ${f.name}\n\n${f.content}`).join('\n\n---\n\n');
+    return files
+      .filter(f => f.isIncluded !== false)
+      .map(f => `## ${f.name}\n\n${f.content}`)
+      .join('\n\n---\n\n');
   }, [files]);
 
   const handleStartOver = useCallback(() => {
@@ -88,6 +99,7 @@ export default function Home() {
       content: '# Welcome to National Parks Planner\n\nStart planning your trip by creating a new file or editing this one.\n\n## How to use\n\n1. Create or select a file from the left panel\n2. Edit the content in the middle editor\n3. Use AI features:\n   - Wrap text with \\`\\`\\`ai-template\\`\\`\\` to generate a template\n   - Wrap text with \\`\\`\\`ai-write\\`\\`\\` to enrich a section\n4. Preview your markdown on the right',
       createdAt: new Date(),
       updatedAt: new Date(),
+      isIncluded: true,
     };
     setFiles([defaultFile]);
     setActiveFileId(defaultFile.id);
@@ -105,6 +117,7 @@ export default function Home() {
           onDeleteFile={handleDeleteFile}
           onRenameFile={handleRenameFile}
           onStartOver={handleStartOver}
+          onToggleFile={handleToggleFile}
         />
       </div>
 
