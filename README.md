@@ -9,6 +9,7 @@ This is a Next.js application that helps users write Markdown format articles wi
 ### AI-Powered Writing Assistant
 
 - **Gemini 2.5 Pro Integration**: Uses Google's Gemini 2.5 Pro model for intelligent content generation
+- **Configurable API Settings**: Built-in settings modal to configure API key and model type
 - **Streaming Responses**: Real-time streaming of AI responses for immediate feedback
 - **Context-Aware**: AI has access to all files in your project for comprehensive understanding
 
@@ -18,12 +19,13 @@ This is a Next.js application that helps users write Markdown format articles wi
    - Create new Markdown files
    - Rename files inline
    - Delete files
+   - Toggle file inclusion in AI context (checkbox next to each file)
    - "Start Over" button to reset all files
    - Persistent storage using localStorage
 
 2. **Middle Panel (50% of remaining width)**: Monaco Editor
    - Full-featured code editor with syntax highlighting
-   - Sparkle (✨) icons in the gutter for AI triggers
+   - AI icons in the gutter for AI triggers (blue and purple sparkle design)
    - Real-time content updates during AI streaming
    - Automatic decoration updates when content changes
 
@@ -31,6 +33,13 @@ This is a Next.js application that helps users write Markdown format articles wi
    - Real-time preview with GitHub Flavored Markdown support
    - Custom styling for headers, lists, code blocks, and tables
    - Fixed width to prevent UI jumping during updates
+
+### Settings Configuration
+
+- **Settings Button**: Floating gear icon at bottom-right corner
+- **Model Selection**: Choose between supported LLM models (currently Gemini Pro 2.5)
+- **API Key Management**: Securely store API keys in browser's local storage
+- **Persistent Settings**: Configuration persists across browser sessions
 
 ## AI Triggers
 
@@ -71,7 +80,7 @@ The AI will provide detailed information with links, durations, and difficulty l
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/national-parks-planner.git
+git clone https://github.com/ZzzGin/national-parks-planner.git
 cd national-parks-planner
 ```
 
@@ -81,25 +90,22 @@ cd national-parks-planner
 npm install
 ```
 
-3. Configure environment variables:
-
-```bash
-cp .env.example .env.local
-```
-
-4. Add your Gemini API key to `.env.local`:
-
-```
-GEMINI_API_KEY=your_actual_gemini_api_key_here
-```
-
-5. Run the development server:
+3. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+5. Configure your API key:
+
+   - Click the settings button (gear icon) at the bottom-right corner
+   - Select "Gemini Pro 2.5" as the model type
+   - Enter your Gemini API key
+   - Click "Save Settings"
+   
+   **Note**: API key configuration is required. The app will display a warning banner until you configure your API key.
 
 ## How to Use
 
@@ -108,7 +114,7 @@ npm run dev
 1. **Create or Select a File**: Use the left panel to manage your Markdown files
 2. **Write Content**: Use the middle editor to write and edit your content
 3. **Add AI Triggers**: Insert `ai-template` or `ai-write` code blocks where you want AI assistance
-4. **Process AI**: Click the sparkle (✨) icon in the gutter next to any AI trigger
+4. **Process AI**: Click the AI icon in the gutter next to any AI trigger
 5. **Preview**: See your formatted content in real-time in the right panel
 
 ### Example: Planning a National Park Trip
@@ -123,7 +129,7 @@ Create a 5-day family trip to Yellowstone National Park in summer
 ```
 ````
 
-3. Click the ✨ icon to generate a template
+3. Click the AI icon to generate a template
 
 4. The AI will create sections like:
    - Activities You Might be Interested
@@ -132,14 +138,16 @@ Create a 5-day family trip to Yellowstone National Park in summer
 
 5. Edit the generated template as needed
 
-6. Enrich specific sections by adding `ai-write` blocks and clicking their ✨ icons
+6. Enrich specific sections by adding `ai-write` blocks and clicking their AI icons
 
 ### Tips for Best Results
 
 - **Provide Context**: The AI uses content from all your files, so related information helps
+- **Manage Context**: Use the checkbox next to each file to include/exclude it from AI context
 - **Be Specific**: Detailed prompts in AI triggers yield better results
 - **Edit and Refine**: AI output is a starting point - customize it to your needs
 - **Multiple Files**: Create separate files for research, itinerary, and packing lists
+- **Context Optimization**: Uncheck files not relevant to current task to improve AI focus
 
 ## Technical Details
 
@@ -147,6 +155,11 @@ Create a 5-day family trip to Yellowstone National Park in summer
 
 - **Endpoint**: `/api/ai`
 - **Method**: POST
+- **Parameters**:
+  - `systemInstruction`: System prompt for the AI
+  - `userPrompt`: User's content/context
+  - `modelType`: LLM model selection (currently supports 'gemini-pro-2.5')
+  - `apiKey`: Required API key from user settings
 - **Streaming**: Server-sent events for real-time response streaming
 - **Model**: Gemini 2.5 Pro with 65,536 max output tokens
 - **Temperature**: 0.7 for balanced creativity and consistency
@@ -175,9 +188,19 @@ Create a 5-day family trip to Yellowstone National Park in summer
 
 #### Context Gathering
 
-- Includes content from all files in the project
+- Includes content from files marked for inclusion (checked in file list)
+- Files can be toggled on/off for context inclusion via checkbox
 - Current file content is always fresh from the editor
 - Clear separation between files for AI understanding
+- Excluded files (unchecked) are not sent to the AI, reducing token usage
+
+#### Settings Management
+
+- **Local Storage**: API keys and settings stored securely in browser
+- **Settings Modal**: Clean UI for configuring LLM options
+- **Dynamic Configuration**: API calls automatically use stored settings
+- **Required Configuration**: API key must be configured through settings modal
+- **Visual Feedback**: Warning banner displays when API key is not configured
 
 ## Scripts
 
@@ -229,6 +252,7 @@ Create a 5-day family trip to Yellowstone National Park in summer
 
 ## Future Enhancements
 
+- [x] Configurable API settings via UI modal
 - [ ] Export to various formats (PDF, DOCX)
 - [ ] Collaborative editing
 - [ ] More AI models support (OpenAI, Anthropic)

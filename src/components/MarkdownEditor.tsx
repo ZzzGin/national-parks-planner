@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 
 interface MarkdownEditorProps {
   content: string;
@@ -26,7 +27,7 @@ export default function MarkdownEditor({
   isProcessing,
   setIsProcessing,
 }: MarkdownEditorProps) {
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const [triggers, setTriggers] = useState<AITrigger[]>([]);
   const decorationsRef = useRef<string[]>([]);
@@ -124,17 +125,24 @@ IMPORTANT NOTES:
     }
 
     try {
+      // Get LLM settings from localStorage
+      const savedSettings = localStorage.getItem('llm-settings');
+      const settings = savedSettings ? JSON.parse(savedSettings) : {};
+      
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction,
           userPrompt: context,
+          modelType: settings.modelType || 'gemini-pro-2.5',
+          apiKey: settings.apiKey || '',
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get AI response');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get AI response');
       }
 
       const reader = response.body?.getReader();
@@ -175,7 +183,16 @@ IMPORTANT NOTES:
       }
     } catch (error) {
       console.error('Error processing AI trigger:', error);
-      alert('Failed to process AI request. Please check your API key.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process AI request';
+      
+      // Show more informative error message
+      if (errorMessage.includes('API key not configured')) {
+        alert('API key not configured. Please click the settings button (gear icon) at the bottom-right corner to configure your Gemini API key.');
+      } else if (errorMessage.includes('API key not valid')) {
+        alert('Invalid API key. Please check your Gemini API key in the settings.');
+      } else {
+        alert(`Error: ${errorMessage}`);
+      }
     } finally {
       setIsProcessing(false);
       aiResponseRef.current = '';
@@ -189,11 +206,11 @@ IMPORTANT NOTES:
       return;
     }
 
-    const editor = editorRef.current;
+    const editorInstance = editorRef.current;
     const monaco = monacoRef.current;
 
     // Always detect triggers from current editor content (not stale props)
-    const currentContent = editor.getValue();
+    const currentContent = editorInstance.getValue();
     const lines = currentContent.split('\n');
     const freshTriggers: AITrigger[] = [];
     
@@ -225,7 +242,7 @@ IMPORTANT NOTES:
     });
 
     // Clear old decorations
-    decorationsRef.current = editor.deltaDecorations(decorationsRef.current, []);
+    decorationsRef.current = editorInstance.deltaDecorations(decorationsRef.current, []);
 
     // Add new decorations for fresh AI triggers
     const newDecorations = freshTriggers.map((trigger) => ({
@@ -239,15 +256,15 @@ IMPORTANT NOTES:
       },
     }));
 
-    decorationsRef.current = editor.deltaDecorations([], newDecorations);
+    decorationsRef.current = editorInstance.deltaDecorations([], newDecorations);
   }, []);
 
   useEffect(() => {
     updateDecorations();
   }, [triggers, updateDecorations]);
 
-  const handleEditorMount = (editor: any, monaco: Monaco) => {
-    editorRef.current = editor;
+  const handleEditorMount = (editorInstance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    editorRef.current = editorInstance;
     monacoRef.current = monaco;
 
     // Add custom CSS for glyph margin if not already added
@@ -256,21 +273,19 @@ IMPORTANT NOTES:
       style.id = 'ai-trigger-styles';
       style.textContent = `
         .ai-trigger-glyph {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           border-radius: 50%;
           cursor: pointer;
-          width: 14px !important;
-          height: 14px !important;
-          margin-left: 3px !important;
+          width: 20px !important;
+          height: 20px !important;
+          margin-left: 10px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
         }
         .ai-trigger-glyph::before {
-          content: '✨';
-          font-size: 10px;
-          position: relative;
-          top: -1px;
+          content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="16" height="16" viewBox="0 0 48 48"><path fill="%232196f3" d="M23.426,31.911l-1.719,3.936c-0.661,1.513-2.754,1.513-3.415,0l-1.719-3.936    c-1.529-3.503-4.282-6.291-7.716-7.815l-4.73-2.1c-1.504-0.668-1.504-2.855,0-3.523l4.583-2.034    c3.522-1.563,6.324-4.455,7.827-8.077l1.741-4.195c0.646-1.557,2.797-1.557,3.443,0l1.741,4.195    c1.503,3.622,4.305,6.514,7.827,8.077l4.583,2.034c1.504,0.668,1.504,2.855,0,3.523l-4.73,2.1    C27.708,25.62,24.955,28.409,23.426,31.911z"></path><path fill="%237e57c2" d="M38.423,43.248l-0.493,1.131c-0.361,0.828-1.507,0.828-1.868,0l-0.493-1.131    c-0.879-2.016-2.464-3.621-4.44-4.5l-1.52-0.675c-0.822-0.365-0.822-1.56,0-1.925l1.435-0.638c2.027-0.901,3.64-2.565,4.504-4.65    l0.507-1.222c0.353-0.852,1.531-0.852,1.884,0l0.507,1.222c0.864,2.085,2.477,3.749,4.504,4.65l1.435,0.638    c0.822,0.365,0.822,1.56,0,1.925l-1.52,0.675C40.887,39.627,39.303,41.232,38.423,43.248z"></path></svg>');
+          width: 16px;
+          height: 16px;
         }
         .ai-trigger-glyph:hover {
           transform: scale(1.2);
@@ -281,13 +296,13 @@ IMPORTANT NOTES:
     }
 
     // Handle glyph margin clicks - always detect fresh triggers from current content
-    const handleClick = (e: any) => {
+    const handleClick = (e: editor.IEditorMouseEvent) => {
       // Check for glyph margin click (type 2) or line number click (type 3)
       if (e.target.type === 2 || e.target.type === 3) { 
         const lineNumber = e.target.position?.lineNumber;
         if (lineNumber && !isProcessing) {
           // Always get fresh content and detect triggers dynamically
-          const currentContent = editor.getValue();
+          const currentContent = editorInstance.getValue();
           const lines = currentContent.split('\n');
           const detectedTriggers: AITrigger[] = [];
           
@@ -326,10 +341,10 @@ IMPORTANT NOTES:
       }
     };
 
-    editor.onMouseDown(handleClick);
+    editorInstance.onMouseDown(handleClick);
 
     // Update decorations when content changes (manual edits)
-    editor.onDidChangeModelContent(() => {
+    editorInstance.onDidChangeModelContent(() => {
       // Debounce the decoration updates to avoid excessive re-rendering
       setTimeout(() => {
         updateDecorations();
@@ -352,7 +367,7 @@ IMPORTANT NOTES:
           )}
           {triggers.length > 0 && !isProcessing && (
             <span className="text-xs text-gray-500">
-              {triggers.length} AI trigger{triggers.length > 1 ? 's' : ''} detected - Click the ✨ in the gutter to process
+              {triggers.length} AI trigger{triggers.length > 1 ? 's' : ''} detected - Click the AI icon in the gutter to process
             </span>
           )}
         </div>

@@ -1,18 +1,20 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export async function POST(req: NextRequest) {
   try {
-    const { systemInstruction, userPrompt } = await req.json();
+    const { systemInstruction, userPrompt, modelType, apiKey } = await req.json();
 
-    if (!process.env.GEMINI_API_KEY) {
+    // Only use the provided API key, no fallback to environment variable
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'Gemini API key not configured' },
-        { status: 500 }
+        { error: 'API key not configured. Please configure your API key in the settings.' },
+        { status: 400 }
       );
     }
+
+    // Initialize Gemini with the provided API key
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     // Log the requests sent to AI models
     console.log('=== AI REQUEST LOG ===');
@@ -23,8 +25,11 @@ export async function POST(req: NextRequest) {
     console.log(userPrompt);
     console.log('=== END AI REQUEST LOG ===\n');
 
+    // For now, only support Gemini Pro 2.5, but accept modelType for future extensibility
+    const modelName = modelType === 'gemini-pro-2.5' ? 'models/gemini-2.5-pro' : 'models/gemini-2.5-pro';
+    
     const model = genAI.getGenerativeModel({
-      model: 'models/gemini-2.5-pro',
+      model: modelName,
       systemInstruction,
       generationConfig: {
         temperature: 0.7,
