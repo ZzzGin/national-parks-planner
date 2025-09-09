@@ -69,7 +69,7 @@ The AI will provide detailed information with links, durations, and difficulty l
 
 ## Setup Instructions
 
-### Prerequisites
+### Local Run Prerequisites
 
 - Node.js 18+
 - npm or yarn
@@ -104,7 +104,7 @@ npm run dev
    - Select "Gemini Pro 2.5" as the model type
    - Enter your Gemini API key
    - Click "Save Settings"
-   
+
    **Note**: API key configuration is required. The app will display a warning banner until you configure your API key.
 
 ## How to Use
@@ -266,9 +266,103 @@ Create a 5-day family trip to Yellowstone National Park in summer
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+## Deployment to Google Cloud
 
-MIT
+### Google Cloud Deployment Prerequisites
+
+- Google Cloud account with billing enabled
+- Google Cloud CLI installed and authenticated
+- Docker installed (for manual deployment)
+
+### Initial Deployment
+
+#### Option 1: Cloud Run (Recommended)
+
+1. **Setup Google Cloud CLI and authenticate:**
+
+   ```bash
+   gcloud auth login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+
+2. **Enable required APIs:**
+
+   ```bash
+   gcloud services enable cloudbuild.googleapis.com run.googleapis.com
+   ```
+
+3. **Deploy using Cloud Build:**
+
+   ```bash
+   gcloud builds submit --config cloudbuild.yaml
+   ```
+
+#### Option 2: App Engine
+
+1. **Deploy to App Engine:**
+
+   ```bash
+   gcloud app deploy
+   ```
+
+#### Option 3: Manual Docker Deployment
+
+1. **Build and push to Container Registry:**
+
+   ```bash
+   docker build -t gcr.io/YOUR_PROJECT_ID/national-parks-planner .
+   docker push gcr.io/YOUR_PROJECT_ID/national-parks-planner
+   ```
+
+2. **Deploy to Cloud Run:**
+
+   ```bash
+   gcloud run deploy national-parks-planner \
+     --image gcr.io/YOUR_PROJECT_ID/national-parks-planner \
+     --platform managed \
+     --region us-central1 \
+     --allow-unauthenticated
+   ```
+
+### Updating Deployed App
+
+After making changes to your code:
+
+#### For Cloud Run (using Cloud Build)
+
+```bash
+gcloud builds submit --config cloudbuild.yaml
+```
+
+#### For App Engine
+
+```bash
+gcloud app deploy
+```
+
+#### For Manual Docker
+
+```bash
+docker build -t gcr.io/YOUR_PROJECT_ID/national-parks-planner .
+docker push gcr.io/YOUR_PROJECT_ID/national-parks-planner
+gcloud run deploy national-parks-planner \
+  --image gcr.io/YOUR_PROJECT_ID/national-parks-planner \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+
+### Deployment Files
+
+The following files have been created for deployment:
+
+- `Dockerfile` - Multi-stage build for optimized container
+- `.dockerignore` - Excludes unnecessary files from Docker context  
+- `cloudbuild.yaml` - Automated CI/CD pipeline for Cloud Run
+- `app.yaml` - App Engine configuration (max 2 instances)
+- `next.config.ts` - Updated with standalone output for Docker
+
+**Note**: Replace `YOUR_PROJECT_ID` with your actual Google Cloud project ID in all commands.
 
 ## Support
 

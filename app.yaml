@@ -1,0 +1,24 @@
+runtime: nodejs20
+
+env_variables:
+  NODE_ENV: production
+  NEXT_TELEMETRY_DISABLED: 1
+  PORT: 8080
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 2
+  target_cpu_utilization: 0.6
+
+handlers:
+- url: /_next/static
+  static_dir: .next/static
+  expiration: "1h"
+
+- url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))$
+  static_files: public/\1
+  upload: public/.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$
+  expiration: "1h"
+
+- url: /.*
+  script: auto

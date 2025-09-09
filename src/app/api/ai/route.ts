@@ -16,15 +16,6 @@ export async function POST(req: NextRequest) {
     // Initialize Gemini with the provided API key
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Log the requests sent to AI models
-    console.log('=== AI REQUEST LOG ===');
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('System Instruction:');
-    console.log(systemInstruction);
-    console.log('\nUser Prompt:');
-    console.log(userPrompt);
-    console.log('=== END AI REQUEST LOG ===\n');
-
     // For now, only support Gemini Pro 2.5, but accept modelType for future extensibility
     const modelName = modelType === 'gemini-pro-2.5' ? 'models/gemini-2.5-pro' : 'models/gemini-2.5-pro';
     
@@ -47,20 +38,11 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          console.log('=== AI RESPONSE LOG ===');
-          console.log('Timestamp:', new Date().toISOString());
-          console.log('Response chunks:');
-          
           for await (const chunk of result.stream) {
             const text = chunk.text();
             fullResponse += text;
-            console.log('Chunk:', text);
             controller.enqueue(encoder.encode(text));
           }
-          
-          console.log('\nFull Response:');
-          console.log(fullResponse);
-          console.log('=== END AI RESPONSE LOG ===\n');
         } catch (error) {
           console.error('Stream error:', error);
           controller.enqueue(encoder.encode('\n[Error generating content]'));
