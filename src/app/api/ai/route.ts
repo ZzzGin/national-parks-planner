@@ -33,14 +33,12 @@ export async function POST(req: NextRequest) {
     const result = await model.generateContentStream(userPrompt);
 
     const encoder = new TextEncoder();
-    let fullResponse = '';
     
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of result.stream) {
             const text = chunk.text();
-            fullResponse += text;
             controller.enqueue(encoder.encode(text));
           }
         } catch (error) {

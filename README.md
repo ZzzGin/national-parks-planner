@@ -253,6 +253,7 @@ Create a 5-day family trip to Yellowstone National Park in summer
 ## Future Enhancements
 
 - [x] Configurable API settings via UI modal
+- [ ] Concurrent AI trigger processing (currently limited to one at a time)
 - [ ] Export to various formats (PDF, DOCX)
 - [ ] Collaborative editing
 - [ ] More AI models support (OpenAI, Anthropic)
