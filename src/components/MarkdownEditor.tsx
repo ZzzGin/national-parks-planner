@@ -47,12 +47,12 @@ export default function MarkdownEditor({
     let blockStartLine = 0;
 
     lines.forEach((line, index) => {
-      if (line.trim().startsWith('```ai-template') || line.trim().startsWith('```ai-write')) {
+      if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write')) {
         inBlock = true;
-        blockType = line.trim().startsWith('```ai-template') ? 'ai-template' : 'ai-write';
+        blockType = line.trim().startsWith('^^^ai-template') ? 'ai-template' : 'ai-write';
         blockStartLine = index;
         blockContent = [];
-      } else if (inBlock && line.trim() === '```') {
+      } else if (inBlock && line.trim() === '^^^') {
         detectedTriggers.push({
           line: blockStartLine,
           type: blockType,
@@ -274,12 +274,12 @@ IMPORTANT NOTES:
     let blockStartLine = 0;
 
     lines.forEach((line: string, index: number) => {
-      if (line.trim().startsWith('```ai-template') || line.trim().startsWith('```ai-write')) {
+      if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write')) {
         inBlock = true;
-        blockType = line.trim().startsWith('```ai-template') ? 'ai-template' : 'ai-write';
+        blockType = line.trim().startsWith('^^^ai-template') ? 'ai-template' : 'ai-write';
         blockStartLine = index;
         blockContent = [];
-      } else if (inBlock && line.trim() === '```') {
+      } else if (inBlock && line.trim() === '^^^') {
         freshTriggers.push({
           line: blockStartLine,
           type: blockType,
@@ -386,6 +386,90 @@ IMPORTANT NOTES:
       document.head.appendChild(style);
     }
 
+    // Register completion provider for AI triggers
+    monaco.languages.registerCompletionItemProvider('markdown', {
+      provideCompletionItems: (model, position) => {
+        const textUntilPosition = model.getValueInRange({
+          startLineNumber: position.lineNumber,
+          startColumn: 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        });
+
+        // Look for ^^^ pattern at the beginning of the current typing
+        const caretPosition = position.column - 1;
+        let startColumn = 1;
+        
+        // Find the start of the ^^^ sequence
+        for (let i = caretPosition - 1; i >= 0; i--) {
+          const char = textUntilPosition[i];
+          if (char === '^' || (char >= 'a' && char <= 'z') || char === '-') {
+            startColumn = i + 1;
+          } else {
+            break;
+          }
+        }
+
+        // Check if we're in a ^^^ context
+        const typedText = textUntilPosition.substring(startColumn - 1, caretPosition);
+        const isCaretTrigger = typedText.startsWith('^') || typedText.includes('^^^');
+        
+        if (!isCaretTrigger) {
+          return { suggestions: [] };
+        }
+
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: startColumn,
+          endColumn: position.column,
+        };
+
+        const suggestions = [];
+        
+        // Only show suggestions if we're typing something that starts with ^ or matches our patterns
+        if (typedText.match(/^\^+/) || typedText.match(/^\^+ai/)) {
+          suggestions.push(
+            {
+              label: '^^^ai-template',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: '^^^ai-template\n${1:Describe what template you want to generate}\n^^^',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'AI Template: Generate a structured writing plan with sections',
+              detail: 'Create a template with organized sections for your topic',
+              range: range,
+              sortText: '1',
+            },
+            {
+              label: '^^^ai-write',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: '^^^ai-write\n${1:Describe what content you want to write}\n^^^',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'AI Write: Generate detailed content for a specific topic',
+              detail: 'Write comprehensive content about your topic',
+              range: range,
+              sortText: '2',
+            }
+          );
+        }
+        
+        // Show closing ^^^ when we detect an open block
+        if (typedText.match(/^\^+$/) && typedText.length >= 3) {
+          suggestions.push({
+            label: '^^^',
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: '^^^',
+            documentation: 'AI trigger delimiter',
+            detail: 'Close an AI trigger block',
+            range: range,
+            sortText: '3',
+          });
+        }
+
+        return { suggestions: suggestions };
+      }
+    });
+
     // Handle glyph margin clicks - always detect fresh triggers from current content
     const handleClick = (e: editor.IEditorMouseEvent) => {
       // Check for glyph margin click (type 2) or line number click (type 3)
@@ -403,12 +487,12 @@ IMPORTANT NOTES:
           let blockStartLine = 0;
 
           lines.forEach((line: string, index: number) => {
-            if (line.trim().startsWith('```ai-template') || line.trim().startsWith('```ai-write')) {
+            if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write')) {
               inBlock = true;
-              blockType = line.trim().startsWith('```ai-template') ? 'ai-template' : 'ai-write';
+              blockType = line.trim().startsWith('^^^ai-template') ? 'ai-template' : 'ai-write';
               blockStartLine = index;
               blockContent = [];
-            } else if (inBlock && line.trim() === '```') {
+            } else if (inBlock && line.trim() === '^^^') {
               detectedTriggers.push({
                 line: blockStartLine,
                 type: blockType,

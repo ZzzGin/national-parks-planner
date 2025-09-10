@@ -16,7 +16,7 @@ interface TocItem {
 }
 
 export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
-  const cleanContent = content.replace(/```ai-(template|write)[\s\S]*?```/g, '');
+  const cleanContent = content.replace(/\^\^\^ai-(template|write)[\s\S]*?\^\^\^/g, '');
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [isTocOpen, setIsTocOpen] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);

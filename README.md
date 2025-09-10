@@ -48,9 +48,9 @@ This is a Next.js application that helps users write Markdown format articles wi
 Create a structured template for your topic:
 
 ````markdown
-```ai-template
+^^^ai-template
 Create a 4-day trip plan for Yellowstone National Park
-```
+^^^
 ````
 
 The AI will generate a comprehensive template with sections wrapped in `ai-write` blocks for further enrichment.
@@ -60,9 +60,9 @@ The AI will generate a comprehensive template with sections wrapped in `ai-write
 Add detailed content to any section:
 
 ````markdown
-```ai-write
+^^^ai-write
 Activities in Grand Canyon National Park
-```
+^^^
 ````
 
 The AI will provide detailed information with links, durations, and difficulty levels.
@@ -124,9 +124,9 @@ npm run dev
 2. Add an AI template trigger:
 
 ````markdown
-```ai-template
+^^^ai-template
 Create a 5-day family trip to Yellowstone National Park in summer
-```
+^^^
 ````
 
 3. Click the AI icon to generate a template
