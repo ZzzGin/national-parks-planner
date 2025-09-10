@@ -40,7 +40,7 @@ export default function MarkdownEditor({
   const detectAITriggers = useCallback((text: string) => {
     const lines = text.split('\n');
     const detectedTriggers: AITrigger[] = [];
-    
+
     let inBlock = false;
     let blockType = '';
     let blockContent: string[] = [];
@@ -78,13 +78,13 @@ export default function MarkdownEditor({
 
   const updateProcessingDecorations = useCallback(() => {
     if (!editorRef.current || !monacoRef.current) return;
-    
+
     const editorInstance = editorRef.current;
     const monaco = monacoRef.current;
-    
+
     // Clear old processing decorations
     processingDecorationsRef.current = editorInstance.deltaDecorations(processingDecorationsRef.current, []);
-    
+
     // Add decorations for all currently processing triggers
     const processingDecorations: editor.IModelDeltaDecoration[] = [];
     processingTriggersRef.current.forEach(triggerKey => {
@@ -99,7 +99,7 @@ export default function MarkdownEditor({
         });
       }
     });
-    
+
     if (processingDecorations.length > 0) {
       processingDecorationsRef.current = editorInstance.deltaDecorations([], processingDecorations);
     }
@@ -120,23 +120,21 @@ export default function MarkdownEditor({
   const processAITriggerWithContent = async (trigger: AITrigger, currentContent: string) => {
     // Quick fix: prevent multiple simultaneous requests to avoid conflicts
     if (isProcessing) return;
-    
-    const triggerKey = `${trigger.startLine}-${trigger.endLine}`;
-    
+
     // Add this trigger to processing set
     addProcessingTrigger(trigger);
-    
+
     setIsProcessing(true);
-    
+
     currentTriggerRef.current = trigger;
     aiResponseRef.current = ''; // Clear response
     baseContentRef.current = currentContent; // Store base content
-    
+
     // Get context from all files including current updated content
     const allFilesContext = getAllContext();
     // Replace the stale current file content with the fresh editor content
     const context = allFilesContext + '\n\n--- CURRENT FILE (LATEST) ---\n\n' + currentContent;
-    
+
     let systemInstruction = '';
     if (trigger.type === 'ai-template') {
       systemInstruction = `You are a helpful writer helping user to write articles in Markdown format.
@@ -150,10 +148,11 @@ ${trigger.topic}
 IMPORTANT NOTES:
 
 1. You should output and only output the template or the writing plan. NEVER use Markdown code block (triple backticks) to wrap the whole output.
-2. The template or writing plan should use markdown level 2 title (##) to represent sections.
-3. For each section, use ai-write codeblocks to describe your plan so that it is easier for users.
+2. The template or writing plan should use markdown level 2 title (##) to represent sections. Each level 2 title (##) should end with 1 empty line.
+3. For each section, use ^^^ai-write block to describe your plan so that it is easier for users.
 4. User might read your template and use AI to write section by section, so make sure you plan the order well for the sections. For example, if section B needs some information from section A, it should be placed after section A.
 5. For each section, if available, add emojis to make the document more lively.
+6. When generate template, take all the user generated files into consideration because user might be interested with them.
 `;
     } else {
       systemInstruction = `You are a helpful writer helping user to write articles in Markdown format.
@@ -169,7 +168,7 @@ You should check the latest information from the Internet and provide details ab
 IMPORTANT NOTES:
 
 1. You should output and only output the section. NEVER use Markdown code block (triple backticks) to wrap the whole output.
-2. Your output will be used to replace the original lines.
+2. Your output will be used to replace the lines wrapped in the ^^^ai-write (including the 2 lines with ^^^). NEVER repeat anything outside of the ^^^ai-write block. One special case to note is, never repeat the level 2 markdown title (##) before the ^^^ block.
 3. You should strictly focus on the topics user requested and don't include anything else.
 `;
     }
@@ -178,7 +177,7 @@ IMPORTANT NOTES:
       // Get LLM settings from localStorage
       const savedSettings = localStorage.getItem('llm-settings');
       const settings = savedSettings ? JSON.parse(savedSettings) : {};
-      
+
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -203,12 +202,12 @@ IMPORTANT NOTES:
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           // CRITICAL FIX: Use stream: true to handle partial UTF-8 sequences properly
           const chunk = decoder.decode(value, { stream: true });
           // Add chunk to response
           aiResponseRef.current += chunk;
-          
+
           // Only update the editor every few chunks to avoid excessive re-renders
           updateCounter++;
           if (updateCounter % 3 === 0 || done) {
@@ -216,14 +215,14 @@ IMPORTANT NOTES:
             // Split the AI response into lines to handle multi-line content properly
             const lines = baseContentRef.current.split('\n');
             const responseLines = aiResponseRef.current.split('\n');
-            
+
             // Replace the original trigger block (from startLine to endLine) with all response lines
             lines.splice(trigger.startLine, trigger.endLine - trigger.startLine + 1, ...responseLines);
             const newContent = lines.join('\n');
             onChange(newContent);
           }
         }
-        
+
         // Final update to ensure all content is displayed
         const lines = baseContentRef.current.split('\n');
         const responseLines = aiResponseRef.current.split('\n');
@@ -234,7 +233,7 @@ IMPORTANT NOTES:
     } catch (error) {
       console.error('Error processing AI trigger:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to process AI request';
-      
+
       // Show more informative error message
       if (errorMessage.includes('API key not configured')) {
         alert('API key not configured. Please click the settings button (gear icon) at the bottom-right corner to configure your Gemini API key.');
@@ -246,9 +245,9 @@ IMPORTANT NOTES:
     } finally {
       // Remove this trigger from processing set
       removeProcessingTrigger(trigger);
-      
+
       setIsProcessing(false);
-      
+
       aiResponseRef.current = '';
       currentTriggerRef.current = null;
     }
@@ -267,7 +266,7 @@ IMPORTANT NOTES:
     const currentContent = editorInstance.getValue();
     const lines = currentContent.split('\n');
     const freshTriggers: AITrigger[] = [];
-    
+
     let inBlock = false;
     let blockType = '';
     let blockContent: string[] = [];
@@ -386,101 +385,17 @@ IMPORTANT NOTES:
       document.head.appendChild(style);
     }
 
-    // Register completion provider for AI triggers
-    monaco.languages.registerCompletionItemProvider('markdown', {
-      provideCompletionItems: (model, position) => {
-        const textUntilPosition = model.getValueInRange({
-          startLineNumber: position.lineNumber,
-          startColumn: 1,
-          endLineNumber: position.lineNumber,
-          endColumn: position.column,
-        });
-
-        // Look for ^^^ pattern at the beginning of the current typing
-        const caretPosition = position.column - 1;
-        let startColumn = 1;
-        
-        // Find the start of the ^^^ sequence
-        for (let i = caretPosition - 1; i >= 0; i--) {
-          const char = textUntilPosition[i];
-          if (char === '^' || (char >= 'a' && char <= 'z') || char === '-') {
-            startColumn = i + 1;
-          } else {
-            break;
-          }
-        }
-
-        // Check if we're in a ^^^ context
-        const typedText = textUntilPosition.substring(startColumn - 1, caretPosition);
-        const isCaretTrigger = typedText.startsWith('^') || typedText.includes('^^^');
-        
-        if (!isCaretTrigger) {
-          return { suggestions: [] };
-        }
-
-        const range = {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: startColumn,
-          endColumn: position.column,
-        };
-
-        const suggestions = [];
-        
-        // Only show suggestions if we're typing something that starts with ^ or matches our patterns
-        if (typedText.match(/^\^+/) || typedText.match(/^\^+ai/)) {
-          suggestions.push(
-            {
-              label: '^^^ai-template',
-              kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: '^^^ai-template\n${1:Describe what template you want to generate}\n^^^',
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'AI Template: Generate a structured writing plan with sections',
-              detail: 'Create a template with organized sections for your topic',
-              range: range,
-              sortText: '1',
-            },
-            {
-              label: '^^^ai-write',
-              kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: '^^^ai-write\n${1:Describe what content you want to write}\n^^^',
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'AI Write: Generate detailed content for a specific topic',
-              detail: 'Write comprehensive content about your topic',
-              range: range,
-              sortText: '2',
-            }
-          );
-        }
-        
-        // Show closing ^^^ when we detect an open block
-        if (typedText.match(/^\^+$/) && typedText.length >= 3) {
-          suggestions.push({
-            label: '^^^',
-            kind: monaco.languages.CompletionItemKind.Text,
-            insertText: '^^^',
-            documentation: 'AI trigger delimiter',
-            detail: 'Close an AI trigger block',
-            range: range,
-            sortText: '3',
-          });
-        }
-
-        return { suggestions: suggestions };
-      }
-    });
-
     // Handle glyph margin clicks - always detect fresh triggers from current content
     const handleClick = (e: editor.IEditorMouseEvent) => {
       // Check for glyph margin click (type 2) or line number click (type 3)
-      if (e.target.type === 2 || e.target.type === 3) { 
+      if (e.target.type === 2 || e.target.type === 3) {
         const lineNumber = e.target.position?.lineNumber;
         if (lineNumber && !isProcessing) {
           // Always get fresh content and detect triggers dynamically
           const currentContent = editorInstance.getValue();
           const lines = currentContent.split('\n');
           const detectedTriggers: AITrigger[] = [];
-          
+
           let inBlock = false;
           let blockType = '';
           let blockContent: string[] = [];
@@ -507,7 +422,7 @@ IMPORTANT NOTES:
               blockContent.push(line);
             }
           });
-          
+
           const trigger = detectedTriggers.find((t: AITrigger) => t.startLine + 1 === lineNumber);
           if (trigger) {
             processAITriggerWithContent(trigger, currentContent);
@@ -547,7 +462,7 @@ IMPORTANT NOTES:
           )}
         </div>
       </div>
-      
+
       <div className="flex-1">
         <Editor
           height="100%"

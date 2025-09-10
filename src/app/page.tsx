@@ -100,7 +100,7 @@ export default function Home() {
   const getAllContext = useCallback(() => {
     return files
       .filter(f => f.isIncluded !== false)
-      .map(f => `## ${f.name}\n\n${f.content}`)
+      .map(f => `File Name: ${f.name}\n\n${f.content}`)
       .join('\n\n---\n\n');
   }, [files]);
 

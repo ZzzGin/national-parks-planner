@@ -63,9 +63,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               onChange={(e) => setModelType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="gemini-pro-2.5">Gemini Pro 2.5</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
             </select>
-            <p className="mt-1 text-xs text-gray-500">Currently only Gemini Pro 2.5 is supported</p>
+            <p className="mt-1 text-xs text-gray-500">Choose between Pro (higher quality) or Flash (faster) models</p>
           </div>
 
           <div>
