@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Components } from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -16,17 +17,58 @@ interface TocItem {
 }
 
 export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
-  const cleanContent = content.replace(/\^\^\^ai-(template|write)[\s\S]*?\^\^\^/g, '');
+  // Process the content to handle ai-update blocks specially
+  const processedContent = content
+    // Remove ai-template and ai-write blocks completely
+    .replace(/\^\^\^ai-(template|write)[\s\S]*?\^\^\^/g, '')
+    // Transform ai-update blocks to preserve content with HTML div wrapper
+    .replace(/\^\^\^ai-update\n([\s\S]*?)\^\^\^/g, (_, allContent) => {
+      // Display all content within the ai-update block (including feedback and original content)
+      return `<div class="ai-update-content">${allContent.trim()}</div>`;
+    });
+  
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [isTocOpen, setIsTocOpen] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Add styles for ai-update content
+  useEffect(() => {
+    if (!document.getElementById('ai-update-styles')) {
+      const style = document.createElement('style');
+      style.id = 'ai-update-styles';
+      style.textContent = `
+        .ai-update-content {
+          background-color: #f3f4f6;
+          border-left: 4px solid #9ca3af;
+          padding: 12px 16px;
+          margin: 16px 0;
+          border-radius: 0 4px 4px 0;
+          position: relative;
+        }
+        
+        .ai-update-content::before {
+          content: "✏️ Content being updated";
+          font-size: 0.75rem;
+          color: #6b7280;
+          font-weight: 500;
+          display: block;
+          margin-bottom: 8px;
+        }
+        
+        .ai-update-content p:last-child {
+          margin-bottom: 0;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   useEffect(() => {
     const headingRegex = /^(#{1,6})\s+(.+)$/gm;
     const items: TocItem[] = [];
     let match;
     
-    while ((match = headingRegex.exec(cleanContent)) !== null) {
+    while ((match = headingRegex.exec(processedContent)) !== null) {
       const level = match[1].length;
       const text = match[2].trim();
       const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -34,7 +76,7 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
     }
     
     setTocItems(items);
-  }, [cleanContent]);
+  }, [processedContent]);
 
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
@@ -131,9 +173,10 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
           <div className="max-w-none text-gray-800">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
               components={components}
             >
-              {cleanContent}
+              {processedContent}
             </ReactMarkdown>
           </div>
         </div>

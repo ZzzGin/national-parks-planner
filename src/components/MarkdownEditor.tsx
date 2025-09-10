@@ -18,6 +18,7 @@ interface AITrigger {
   topic: string;
   startLine: number;
   endLine: number;
+  originalContent?: string; // For ai-update triggers
 }
 
 export default function MarkdownEditor({
@@ -47,18 +48,39 @@ export default function MarkdownEditor({
     let blockStartLine = 0;
 
     lines.forEach((line, index) => {
-      if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write')) {
+      if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write') || line.trim().startsWith('^^^ai-update')) {
         inBlock = true;
-        blockType = line.trim().startsWith('^^^ai-template') ? 'ai-template' : 'ai-write';
+        if (line.trim().startsWith('^^^ai-template')) {
+          blockType = 'ai-template';
+        } else if (line.trim().startsWith('^^^ai-write')) {
+          blockType = 'ai-write';
+        } else {
+          blockType = 'ai-update';
+        }
         blockStartLine = index;
         blockContent = [];
       } else if (inBlock && line.trim() === '^^^') {
+        let topic = blockContent.join('\n').trim();
+        let originalContent = '';
+        
+        // For ai-update triggers, split the content into feedback and original content
+        if (blockType === 'ai-update') {
+          const lines = blockContent;
+          if (lines.length > 0) {
+            // First line is the feedback/instruction
+            topic = lines[0].trim();
+            // Rest is the original content to be updated
+            originalContent = lines.slice(1).join('\n').trim();
+          }
+        }
+        
         detectedTriggers.push({
           line: blockStartLine,
           type: blockType,
-          topic: blockContent.join('\n').trim(),
+          topic: topic,
           startLine: blockStartLine,
           endLine: index,
+          originalContent: blockType === 'ai-update' ? originalContent : undefined,
         });
         inBlock = false;
         blockType = '';
@@ -149,12 +171,12 @@ IMPORTANT NOTES:
 
 1. You should output and only output the template or the writing plan. NEVER use Markdown code block (triple backticks) to wrap the whole output.
 2. The template or writing plan should use markdown level 2 title (##) to represent sections. Each level 2 title (##) should end with 1 empty line.
-3. For each section, use ^^^ai-write block to describe your plan so that it is easier for users.
+3. For each section, use "^^^ai-write" block to describe your plan so that it is easier for users. You must close the block using "^^^".
 4. User might read your template and use AI to write section by section, so make sure you plan the order well for the sections. For example, if section B needs some information from section A, it should be placed after section A.
 5. For each section, if available, add emojis to make the document more lively.
 6. When generate template, take all the user generated files into consideration because user might be interested with them.
 `;
-    } else {
+    } else if (trigger.type === 'ai-write') {
       systemInstruction = `You are a helpful writer helping user to write articles in Markdown format.
 
 The full context is (will be) provided.
@@ -168,8 +190,28 @@ You should check the latest information from the Internet and provide details ab
 IMPORTANT NOTES:
 
 1. You should output and only output the section. NEVER use Markdown code block (triple backticks) to wrap the whole output.
-2. Your output will be used to replace the lines wrapped in the ^^^ai-write (including the 2 lines with ^^^). NEVER repeat anything outside of the ^^^ai-write block. One special case to note is, never repeat the level 2 markdown title (##) before the ^^^ block.
+2. Your output will be used to replace the lines wrapped in the "^^^ai-write" (including the 2 lines with "^^^"). NEVER repeat anything outside of the ^^^ai-write block. One special case to note is, never repeat the level 2 markdown title (##) before the ^^^ block.
 3. You should strictly focus on the topics user requested and don't include anything else.
+`;
+    } else if (trigger.type === 'ai-update') {
+      systemInstruction = `You are a helpful writer helping user to improve and update articles in Markdown format.
+
+The full context is (will be) provided.
+
+The user wants to update the following content based on their feedback:
+
+User feedback: ${trigger.topic}
+
+Original content to update:
+${trigger.originalContent || ''}
+
+IMPORTANT NOTES:
+
+1. You should output and only output the updated content. NEVER use Markdown code block (triple backticks) to wrap the whole output.
+2. Your output will be used to replace the lines wrapped in the "^^^ai-update" block (including the 2 lines with "^^^"). NEVER repeat anything outside of the ^^^ai-update block.
+3. Focus on applying the user's feedback while maintaining the same structure and format as the original content.
+4. Keep the same tone and style unless the feedback specifically requests otherwise.
+5. Improve the content based on the user's feedback while preserving the core information.
 `;
     }
 
@@ -273,18 +315,39 @@ IMPORTANT NOTES:
     let blockStartLine = 0;
 
     lines.forEach((line: string, index: number) => {
-      if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write')) {
+      if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write') || line.trim().startsWith('^^^ai-update')) {
         inBlock = true;
-        blockType = line.trim().startsWith('^^^ai-template') ? 'ai-template' : 'ai-write';
+        if (line.trim().startsWith('^^^ai-template')) {
+          blockType = 'ai-template';
+        } else if (line.trim().startsWith('^^^ai-write')) {
+          blockType = 'ai-write';
+        } else {
+          blockType = 'ai-update';
+        }
         blockStartLine = index;
         blockContent = [];
       } else if (inBlock && line.trim() === '^^^') {
+        let topic = blockContent.join('\n').trim();
+        let originalContent = '';
+        
+        // For ai-update triggers, split the content into feedback and original content
+        if (blockType === 'ai-update') {
+          const lines = blockContent;
+          if (lines.length > 0) {
+            // First line is the feedback/instruction
+            topic = lines[0].trim();
+            // Rest is the original content to be updated
+            originalContent = lines.slice(1).join('\n').trim();
+          }
+        }
+        
         freshTriggers.push({
           line: blockStartLine,
           type: blockType,
-          topic: blockContent.join('\n').trim(),
+          topic: topic,
           startLine: blockStartLine,
           endLine: index,
+          originalContent: blockType === 'ai-update' ? originalContent : undefined,
         });
         inBlock = false;
         blockType = '';
@@ -402,18 +465,39 @@ IMPORTANT NOTES:
           let blockStartLine = 0;
 
           lines.forEach((line: string, index: number) => {
-            if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write')) {
+            if (line.trim().startsWith('^^^ai-template') || line.trim().startsWith('^^^ai-write') || line.trim().startsWith('^^^ai-update')) {
               inBlock = true;
-              blockType = line.trim().startsWith('^^^ai-template') ? 'ai-template' : 'ai-write';
+              if (line.trim().startsWith('^^^ai-template')) {
+                blockType = 'ai-template';
+              } else if (line.trim().startsWith('^^^ai-write')) {
+                blockType = 'ai-write';
+              } else {
+                blockType = 'ai-update';
+              }
               blockStartLine = index;
               blockContent = [];
             } else if (inBlock && line.trim() === '^^^') {
+              let topic = blockContent.join('\n').trim();
+              let originalContent = '';
+              
+              // For ai-update triggers, split the content into feedback and original content
+              if (blockType === 'ai-update') {
+                const lines = blockContent;
+                if (lines.length > 0) {
+                  // First line is the feedback/instruction
+                  topic = lines[0].trim();
+                  // Rest is the original content to be updated
+                  originalContent = lines.slice(1).join('\n').trim();
+                }
+              }
+              
               detectedTriggers.push({
                 line: blockStartLine,
                 type: blockType,
-                topic: blockContent.join('\n').trim(),
+                topic: topic,
                 startLine: blockStartLine,
                 endLine: index,
+                originalContent: blockType === 'ai-update' ? originalContent : undefined,
               });
               inBlock = false;
               blockType = '';

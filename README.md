@@ -68,6 +68,20 @@ Activities in Grand Canyon National Park
 
 The AI will provide detailed information with links, durations, and difficulty levels.
 
+### 3. `ai-update` - Update Existing Content
+
+Improve or modify existing content based on your feedback:
+
+````markdown
+^^^ai-update
+change this part to more professional
+
+Yellowstone is a really cool place with lots of animals and hot springs. You can see bears and wolves if you're lucky.
+^^^
+````
+
+The AI will rewrite the content according to your feedback while preserving the core information and maintaining consistency with the rest of your document.
+
 ## Setup Instructions
 
 ### Local Run Prerequisites
@@ -114,7 +128,7 @@ npm run dev
 
 1. **Create or Select a File**: Use the left panel to manage your Markdown files
 2. **Write Content**: Use the middle editor to write and edit your content
-3. **Add AI Triggers**: Insert `ai-template` or `ai-write` code blocks where you want AI assistance
+3. **Add AI Triggers**: Insert `ai-template`, `ai-write`, or `ai-update` code blocks where you want AI assistance
 4. **Process AI**: Click the AI icon in the gutter next to any AI trigger
 5. **Preview**: See your formatted content in real-time in the right panel
 
@@ -140,6 +154,7 @@ Create a 5-day family trip to Yellowstone National Park in summer
 5. Edit the generated template as needed
 
 6. Enrich specific sections by adding `ai-write` blocks and clicking their AI icons
+7. Update existing content by wrapping it with `ai-update` blocks and providing feedback
 
 ### Tips for Best Results
 
