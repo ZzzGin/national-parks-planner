@@ -108,6 +108,29 @@ export default function Home() {
       .join('\n\n---\n\n');
   }, [files]);
 
+  const getContextStats = useCallback(() => {
+    const context = getAllContext();
+    const charCount = context.length;
+    const tokenEstimate = Math.ceil(charCount / 3.5); // Rough estimate: ~3.5 chars per token
+    
+    const formatCount = (count: number): string => {
+      if (count >= 1000000) {
+        return `${(count / 1000000).toFixed(1)}M`;
+      } else if (count >= 1000) {
+        return `${(count / 1000).toFixed(1)}K`;
+      } else {
+        return count.toString();
+      }
+    };
+
+    return {
+      charCount,
+      tokenEstimate,
+      formattedChars: formatCount(charCount),
+      formattedTokens: formatCount(tokenEstimate),
+    };
+  }, [getAllContext]);
+
   const handleStartOver = useCallback(() => {
     const defaultFile: MarkdownFile = {
       id: crypto.randomUUID(),
@@ -177,6 +200,7 @@ export default function Home() {
           onRenameFile={handleRenameFile}
           onStartOver={handleStartOver}
           onToggleFile={handleToggleFile}
+          contextStats={getContextStats()}
         />
       </div>
 

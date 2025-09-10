@@ -13,6 +13,12 @@ interface FileTabListProps {
   onRenameFile: (id: string, newName: string) => void;
   onStartOver: () => void;
   onToggleFile: (id: string) => void;
+  contextStats?: {
+    charCount: number;
+    tokenEstimate: number;
+    formattedChars: string;
+    formattedTokens: string;
+  };
 }
 
 export default function FileTabList({
@@ -24,6 +30,7 @@ export default function FileTabList({
   onRenameFile,
   onStartOver,
   onToggleFile,
+  contextStats,
 }: FileTabListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -144,6 +151,20 @@ export default function FileTabList({
           </div>
         ))}
       </div>
+
+      {contextStats && (
+        <div className="border-t border-gray-200 p-3 bg-gray-50">
+          <div className="text-xs font-medium text-gray-600 mb-1">Selected Files Context</div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="text-gray-500">
+              Characters: <span className="font-mono text-gray-700">{contextStats.formattedChars}</span>
+            </div>
+            <div className="text-gray-500">
+              Tokens: <span className="font-mono text-gray-700">~{contextStats.formattedTokens}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
