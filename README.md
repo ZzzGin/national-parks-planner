@@ -8,7 +8,7 @@ This is a Next.js application that helps users write Markdown format articles wi
 
 ### AI-Powered Writing Assistant
 
-- **Gemini 2.5 Pro Integration**: Uses Google's Gemini 2.5 Pro model for intelligent content generation
+- **Gemini AI Integration**: Uses Google's Gemini 2.5 models (Pro and Flash) for intelligent content generation
 - **Configurable API Settings**: Built-in settings modal to configure API key and model type
 - **Streaming Responses**: Real-time streaming of AI responses for immediate feedback
 - **Context-Aware**: AI has access to all files in your project for comprehensive understanding
@@ -23,13 +23,13 @@ This is a Next.js application that helps users write Markdown format articles wi
    - "Start Over" button to reset all files
    - Persistent storage using localStorage
 
-2. **Middle Panel (50% of remaining width)**: Monaco Editor
+2. **Middle Panel**: Monaco Editor
    - Full-featured code editor with syntax highlighting
    - AI icons in the gutter for AI triggers (blue and purple sparkle design)
    - Real-time content updates during AI streaming
    - Automatic decoration updates when content changes
 
-3. **Right Panel (50% of remaining width)**: Live Markdown Preview
+3. **Right Panel**: Live Markdown Preview
    - Real-time preview with GitHub Flavored Markdown support
    - Custom styling for headers, lists, code blocks, and tables
    - Fixed width to prevent UI jumping during updates
@@ -37,9 +37,10 @@ This is a Next.js application that helps users write Markdown format articles wi
 ### Settings Configuration
 
 - **Settings Button**: Floating gear icon at bottom-right corner
-- **Model Selection**: Choose between supported LLM models (currently Gemini Pro 2.5)
+- **Model Selection**: Choose between Gemini 2.5 Pro (higher quality) and Gemini 2.5 Flash (faster processing)
 - **API Key Management**: Securely store API keys in browser's local storage
 - **Persistent Settings**: Configuration persists across browser sessions
+- **Concurrent Request Protection**: Prevents multiple AI requests from running simultaneously
 
 ## AI Triggers
 
@@ -101,7 +102,7 @@ npm run dev
 5. Configure your API key:
 
    - Click the settings button (gear icon) at the bottom-right corner
-   - Select "Gemini Pro 2.5" as the model type
+   - Select "Gemini 2.5 Pro" or "Gemini 2.5 Flash" as the model type
    - Enter your Gemini API key
    - Click "Save Settings"
 
@@ -158,10 +159,10 @@ Create a 5-day family trip to Yellowstone National Park in summer
 - **Parameters**:
   - `systemInstruction`: System prompt for the AI
   - `userPrompt`: User's content/context
-  - `modelType`: LLM model selection (currently supports 'gemini-pro-2.5')
+  - `modelType`: LLM model selection (supports 'gemini-2.5-pro' and 'gemini-2.5-flash')
   - `apiKey`: Required API key from user settings
 - **Streaming**: Server-sent events for real-time response streaming
-- **Model**: Gemini 2.5 Pro with 65,536 max output tokens
+- **Models**: Gemini 2.5 Pro and Gemini 2.5 Flash with 65,536 max output tokens
 - **Temperature**: 0.7 for balanced creativity and consistency
 
 ### Frontend Architecture
