@@ -8,6 +8,8 @@ import rehypeRaw from 'rehype-raw';
 
 interface MarkdownPreviewProps {
   content: string;
+  onScrollSync?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
+  scrollSyncTarget?: { scrollTop: number; scrollHeight: number; clientHeight: number };
 }
 
 interface TocItem {
@@ -16,26 +18,32 @@ interface TocItem {
   level: number;
 }
 
-export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
-  // Process the content to handle ai-update blocks specially
+export default function MarkdownPreview({ content, onScrollSync, scrollSyncTarget }: MarkdownPreviewProps) {
+  // Process the content to handle AI blocks specially
   const processedContent = content
-    // Remove ai-template and ai-write blocks completely
-    .replace(/\^\^\^ai-(template|write)[\s\S]*?\^\^\^/g, '')
-    // Transform ai-update blocks to preserve content with HTML div wrapper
+    // Remove ai-template blocks completely
+    .replace(/\^\^\^ai-template[\s\S]*?\^\^\^/g, '')
+    // Transform ai-update blocks to preserve content with HTML div wrapper (gray background)
     .replace(/\^\^\^ai-update\n([\s\S]*?)\^\^\^/g, (_, allContent) => {
       // Display all content within the ai-update block (including feedback and original content)
       return `<div class="ai-update-content">${allContent.trim()}</div>`;
+    })
+    // Transform ai-write blocks to preserve content with HTML div wrapper (yellow background)
+    .replace(/\^\^\^ai-write\n([\s\S]*?)\^\^\^/g, (_, allContent) => {
+      // Display all content within the ai-write block
+      return `<div class="ai-write-content">${allContent.trim()}</div>`;
     });
   
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [isTocOpen, setIsTocOpen] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
+  const isScrollingSyncRef = useRef<boolean>(false);
   
-  // Add styles for ai-update content
+  // Add styles for AI content blocks
   useEffect(() => {
-    if (!document.getElementById('ai-update-styles')) {
+    if (!document.getElementById('ai-blocks-styles')) {
       const style = document.createElement('style');
-      style.id = 'ai-update-styles';
+      style.id = 'ai-blocks-styles';
       style.textContent = `
         .ai-update-content {
           background-color: #f3f4f6;
@@ -55,7 +63,26 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
           margin-bottom: 8px;
         }
         
-        .ai-update-content p:last-child {
+        .ai-write-content {
+          background-color: #fefce8;
+          border-left: 4px solid #eab308;
+          padding: 12px 16px;
+          margin: 16px 0;
+          border-radius: 0 4px 4px 0;
+          position: relative;
+        }
+        
+        .ai-write-content::before {
+          content: "✨ Content to be written";
+          font-size: 0.75rem;
+          color: #a16207;
+          font-weight: 500;
+          display: block;
+          margin-bottom: 8px;
+        }
+        
+        .ai-update-content p:last-child,
+        .ai-write-content p:last-child {
           margin-bottom: 0;
         }
       `;
@@ -77,6 +104,46 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
     
     setTocItems(items);
   }, [processedContent]);
+  
+  // Add scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (contentRef.current && onScrollSync && !isScrollingSyncRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+        onScrollSync(scrollTop, scrollHeight, clientHeight);
+      }
+    };
+    
+    const contentElement = contentRef.current;
+    if (contentElement) {
+      contentElement.addEventListener('scroll', handleScroll, { passive: true });
+      return () => {
+        contentElement.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [onScrollSync]);
+  
+  // Handle scroll synchronization from editor panel
+  useEffect(() => {
+    if (scrollSyncTarget && contentRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollSyncTarget;
+      const previewElement = contentRef.current;
+      const previewScrollHeight = previewElement.scrollHeight;
+      const previewClientHeight = previewElement.clientHeight;
+      
+      // Calculate proportional scroll position
+      const scrollRatio = scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0;
+      const targetScrollTop = scrollRatio * Math.max(0, previewScrollHeight - previewClientHeight);
+      
+      isScrollingSyncRef.current = true;
+      previewElement.scrollTop = targetScrollTop;
+      
+      // Reset sync flag after a short delay
+      setTimeout(() => {
+        isScrollingSyncRef.current = false;
+      }, 50);
+    }
+  }, [scrollSyncTarget]);
 
   const scrollToHeading = (id: string) => {
     const element = document.getElementById(id);
@@ -169,7 +236,7 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
           <h2 className="text-sm font-medium text-gray-700">Preview</h2>
         </div>
         
-        <div ref={contentRef} className="flex-1 overflow-y-auto p-6">
+        <div ref={contentRef} className="flex-1 overflow-y-auto p-6" style={{ scrollBehavior: 'auto' }}>
           <div className="max-w-none text-gray-800">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}

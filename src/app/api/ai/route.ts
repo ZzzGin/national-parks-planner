@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
           }
         } catch (error) {
           controller.enqueue(encoder.encode('\n[Error generating content]'));
+          console.error('Stream error:', error);
         } finally {
           controller.close();
         }
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
+    console.error('Stream error:', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

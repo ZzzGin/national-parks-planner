@@ -10,6 +10,8 @@ interface MarkdownEditorProps {
   getAllContext: () => string;
   isProcessing: boolean;
   setIsProcessing: (processing: boolean) => void;
+  onScrollSync?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
+  scrollSyncTarget?: { scrollTop: number; scrollHeight: number; clientHeight: number };
 }
 
 interface AITrigger {
@@ -27,6 +29,8 @@ export default function MarkdownEditor({
   getAllContext,
   isProcessing,
   setIsProcessing,
+  onScrollSync,
+  scrollSyncTarget,
 }: MarkdownEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -37,6 +41,7 @@ export default function MarkdownEditor({
   const currentTriggerRef = useRef<AITrigger | null>(null);
   const baseContentRef = useRef<string>('');
   const processingTriggersRef = useRef<Set<string>>(new Set());
+  const isScrollingSyncRef = useRef<boolean>(false);
 
   const detectAITriggers = useCallback((text: string) => {
     const lines = text.split('\n');
@@ -378,10 +383,40 @@ IMPORTANT NOTES:
   useEffect(() => {
     updateDecorations();
   }, [triggers, isProcessing, updateDecorations]);
+  
+  // Handle scroll synchronization from preview panel
+  useEffect(() => {
+    if (scrollSyncTarget && editorRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollSyncTarget;
+      const editorHeight = editorRef.current.getLayoutInfo().height;
+      const editorScrollHeight = editorRef.current.getScrollHeight();
+      
+      // Calculate proportional scroll position
+      const scrollRatio = scrollHeight > clientHeight ? scrollTop / (scrollHeight - clientHeight) : 0;
+      const targetScrollTop = scrollRatio * Math.max(0, editorScrollHeight - editorHeight);
+      
+      isScrollingSyncRef.current = true;
+      editorRef.current.setScrollTop(targetScrollTop);
+      
+      // Reset sync flag after a short delay
+      setTimeout(() => {
+        isScrollingSyncRef.current = false;
+      }, 50);
+    }
+  }, [scrollSyncTarget]);
 
   const handleEditorMount = (editorInstance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editorInstance;
     monacoRef.current = monaco;
+    
+    // Add scroll synchronization
+    if (onScrollSync) {
+      editorInstance.onDidScrollChange((e) => {
+        if (!isScrollingSyncRef.current) {
+          onScrollSync(e.scrollTop, e.scrollHeight, editorInstance.getLayoutInfo().height);
+        }
+      });
+    }
 
     // Add custom CSS for glyph margin if not already added
     if (!document.getElementById('ai-trigger-styles')) {

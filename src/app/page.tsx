@@ -15,6 +15,10 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  
+  // Scroll synchronization state
+  const [editorScrollSync, setEditorScrollSync] = useState<{ scrollTop: number; scrollHeight: number; clientHeight: number } | undefined>();
+  const [previewScrollSync, setPreviewScrollSync] = useState<{ scrollTop: number; scrollHeight: number; clientHeight: number } | undefined>();
 
   useEffect(() => {
     // Check for API key
@@ -127,6 +131,14 @@ export default function Home() {
       setHasApiKey(!!settings.apiKey);
     }
   };
+  
+  const handleEditorScroll = useCallback((scrollTop: number, scrollHeight: number, clientHeight: number) => {
+    setPreviewScrollSync({ scrollTop, scrollHeight, clientHeight });
+  }, []);
+  
+  const handlePreviewScroll = useCallback((scrollTop: number, scrollHeight: number, clientHeight: number) => {
+    setEditorScrollSync({ scrollTop, scrollHeight, clientHeight });
+  }, []);
 
   return (
     <>
@@ -178,13 +190,20 @@ export default function Home() {
               getAllContext={getAllContext}
               isProcessing={isProcessing}
               setIsProcessing={setIsProcessing}
+              onScrollSync={handleEditorScroll}
+              scrollSyncTarget={editorScrollSync}
             />
           )}
         </div>
 
         <div className="w-3/5 bg-white">
           {activeFile && (
-            <MarkdownPreview key={activeFile.id} content={activeFile.content} />
+            <MarkdownPreview 
+              key={activeFile.id} 
+              content={activeFile.content}
+              onScrollSync={handlePreviewScroll}
+              scrollSyncTarget={previewScrollSync}
+            />
           )}
         </div>
       </div>
