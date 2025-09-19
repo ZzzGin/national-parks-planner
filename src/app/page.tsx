@@ -204,7 +204,7 @@ export default function Home() {
         />
       </div>
 
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-w-0">
         <div className="w-2/5 border-r border-gray-200">
           {activeFile && (
             <MarkdownEditor
@@ -220,7 +220,7 @@ export default function Home() {
           )}
         </div>
 
-        <div className="w-3/5 bg-white">
+        <div className="w-3/5 bg-white min-w-0">
           {activeFile && (
             <MarkdownPreview 
               key={activeFile.id} 

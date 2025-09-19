@@ -231,7 +231,7 @@ export default function MarkdownPreview({ content, onScrollSync, scrollSyncTarge
   return (
     <div className="h-full flex">
       {/* Main Preview Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <div className="p-2 border-b border-gray-200">
           <h2 className="text-sm font-medium text-gray-700">Preview</h2>
         </div>
